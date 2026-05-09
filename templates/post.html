@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} - L丶YOU的博客{% endblock %}
+{% block content %}
+<article class="post-full">
+    <!-- Post Header -->
+    <header class="post-header">
+        <h1 class="post-title">{{ post.title }}</h1>
+        <div class="post-meta">
+            <span><i class="far fa-calendar-alt"></i> {{ post.created_at[:10] }}</span>
+            {% if post.updated_at != post.created_at %}
+            <span><i class="far fa-edit"></i> 更新于 {{ post.updated_at[:10] }}</span>
+            {% endif %}
+            <span><i class="far fa-eye"></i> {{ post.views }} 次阅读</span>
+            {% if tags %}
+            <span class="post-tags">
+                {% for tag_name in tags %}
+                <a href="{{ url_for('index', tag=tag_name) }}" class="tag-badge">{{ tag_name }}</a>
+                {% endfor %}
+            </span>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Featured Image -->
+    {% if post.image %}
+    <div class="post-featured-image">
+        <img src="{{ featured_image_url or url_for('uploaded_file', filename=post.image) }}" alt="{{ post.title }}">
+    </div>
+    {% endif %}
+
+    <!-- Post Content (Markdown rendered HTML) -->
+    <div class="post-content markdown-body">
+        {{ content_html | safe }}
+    </div>
+
+    <!-- Post Navigation -->
+    <nav class="post-navigation">
+        <div class="post-nav-prev">
+            {% if prev_post %}
+            <a href="{{ url_for('view_post', post_id=prev_post.id) }}" class="post-nav-link">
+                <i class="fas fa-arrow-left"></i>
+                <span class="post-nav-label">上一篇</span>
+                <span class="post-nav-title">{{ prev_post.title }}</span>
+            </a>
+            {% endif %}
+        </div>
+        <div class="post-nav-next">
+            {% if next_post %}
+            <a href="{{ url_for('view_post', post_id=next_post.id) }}" class="post-nav-link">
+                <span class="post-nav-label">下一篇</span>
+                <span class="post-nav-title">{{ next_post.title }}</span>
+                <i class="fas fa-arrow-right"></i>
+            </a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Actions -->
+    <div class="post-actions">
+        <a href="{{ url_for('index') }}" class="btn btn-outline">
+            <i class="fas fa-home"></i> 返回首页
+        </a>
+        {% if logged_in %}
+        <a href="{{ url_for('edit_post', post_id=post.id) }}" class="btn btn-primary">
+            <i class="fas fa-edit"></i> 编辑文章
+        </a>
+        {% endif %}
+    </div>
+</article>
+{% endblock %}

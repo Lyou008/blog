@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'create' %}写文章{% else %}编辑文章{% endif %} - L丶YOU的博客{% endblock %}
+{% block content %}
+<div class="edit-page">
+    <div class="page-header">
+        <h1>{% if mode == 'create' %}<i class="fas fa-pen-fancy"></i> 写新文章{% else %}<i class="fas fa-edit"></i> 编辑文章{% endif %}</h1>
+        <a href="{{ url_for('admin') }}" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> 返回管理
+        </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="post-form" id="postForm">
+        <!-- Title -->
+        <div class="form-group">
+            <label for="title">文章标题 <span class="required">*</span></label>
+            <input type="text" id="title" name="title" class="form-control" required
+                   placeholder="输入文章标题..." value="{{ post.title if post else '' }}" maxlength="200">
+        </div>
+
+        <!-- Summary -->
+        <div class="form-group">
+            <label for="summary">文章摘要</label>
+            <textarea id="summary" name="summary" class="form-control" rows="2"
+                      placeholder="简短的文章摘要（可选）">{{ post.summary if post else '' }}</textarea>
+        </div>
+
+        <!-- Tags -->
+        <div class="form-group">
+            <label for="tags">标签</label>
+            <input type="text" id="tags" name="tags" class="form-control"
+                   placeholder="用逗号分隔，例如: Flask, Python, Web"
+                   value="{{ tags_str if tags_str else '' }}">
+        </div>
+
+        <!-- Content -->
+        <div class="form-group">
+            <label for="content">文章内容 (Markdown) <span class="required">*</span></label>
+            <div class="editor-toolbar">
+                <button type="button" class="editor-btn" onclick="insertMarkdown('**', '**')" title="加粗"><i class="fas fa-bold"></i></button>
+                <button type="button" class="editor-btn" onclick="insertMarkdown('*', '*')" title="斜体"><i class="fas fa-italic"></i></button>
+                <button type="button" class="editor-btn" onclick="insertMarkdown('# ', '')" title="标题"><i class="fas fa-heading"></i></button>
+                <button type="button" class="editor-btn" onclick="insertMarkdown('> ', '')" title="引用"><i class="fas fa-quote-right"></i></button>
+                <button type="button" class="editor-btn" onclick="insertMarkdown('- ', '')" title="列表"><i class="fas fa-list"></i></button>
+                <button type="button" class="editor-btn" onclick="insertMarkdown('```\n', '\n```')" title="代码块"><i class="fas fa-code"></i></button>
+                <button type="button" class="editor-btn" onclick="insertMarkdown('[', '](url)')" title="链接"><i class="fas fa-link"></i></button>
+                <button type="button" class="editor-btn" onclick="uploadAndInsertImage()" title="插入图片"><i class="fas fa-image"></i></button>
+                <span class="editor-toolbar-sep"></span>
+                <button type="button" class="editor-btn preview-btn" onclick="togglePreview()" title="预览">
+                    <i class="fas fa-eye"></i> 预览
+                </button>
+            </div>
+            <textarea id="content" name="content" class="form-control editor-textarea" required
+                      placeholder="使用 Markdown 语法写文章...&#10;&#10;支持: **加粗**, *斜体*, `代码`, 图片, 链接等">{{ post.content if post else '' }}</textarea>
+        </div>
+
+        <!-- Preview Panel -->
+        <div id="previewPanel" class="preview-panel hidden">
+            <div class="preview-header">
+                <h3><i class="fas fa-eye"></i> 预览</h3>
+                <button type="button" class="icon-btn" onclick="togglePreview()">&times;</button>
+            </div>
+            <div id="previewContent" class="markdown-body"></div>
+        </div>
+
+        <!-- Image Upload -->
+        <div class="form-group">
+            <label for="image">特色图片</label>
+            <div class="image-upload-wrapper">
+                <div class="image-upload-area" id="imageUploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>点击或拖拽上传图片</p>
+                    <span class="text-muted small">支持 PNG, JPG, GIF, WEBP (最大 16MB)</span>
+                    <input type="file" id="image" name="image" accept="image/*" class="file-input">
+                </div>
+                {% if post and post.image %}
+                <div class="current-image" id="currentImage">
+                    <img src="{{ image_url or url_for('uploaded_file', filename=post.image) }}" alt="当前图片">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="delete_image" id="deleteImage">
+                        删除此图片
+                    </label>
+                </div>
+                {% endif %}
+                <div id="imagePreview" class="image-preview hidden"></div>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="form-actions">
+            <a href="{% if post %}{{ url_for('view_post', post_id=post.id) }}{% else %}{{ url_for('admin') }}{% endif %}"
+               class="btn btn-outline">取消</a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-check"></i>
+                {% if mode == 'create' %}发布文章{% else %}保存修改{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Text insertion for editor toolbar
+function insertMarkdown(before, after) {
+    const textarea = document.getElementById('content');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = textarea.value.substring(start, end);
+    const replacement = before + selected + after;
+    textarea.setSelectionRange(start, end);
+    document.execCommand('insertText', false, replacement);
+    textarea.focus();
+}
+
+// Image upload from editor
+function uploadAndInsertImage() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        fetch('{{ url_for("upload_image") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.url) {
+                const textarea = document.getElementById('content');
+                const imgMd = `![${file.name}](${data.url})`;
+                document.execCommand('insertText', false, imgMd);
+            } else {
+                alert('上传失败: ' + (data.error || '未知错误'));
+            }
+        })
+        .catch(err => alert('上传出错: ' + err));
+    };
+    input.click();
+}
+
+// Toggle preview
+function togglePreview() {
+    const panel = document.getElementById('previewPanel');
+    const textarea = document.getElementById('content');
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) {
+        // Simple markdown rendering in preview
+        const md = textarea.value;
+        let html = md
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/### (.+)/g, '<h3>$1</h3>')
+            .replace(/## (.+)/g, '<h2>$1</h2>')
+            .replace(/# (.+)/g, '<h1>$1</h1>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/`(.+?)`/g, '<code>$1</code>')
+            .replace(/!\[(.+?)\]\((.+?)\)/g, '<img src="$2" alt="$1" style="max-width:100%">')
+            .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>')
+            .replace(/> (.+)/g, '<blockquote>$1</blockquote>')
+            .replace(/- (.+)/g, '<li>$1</li>')
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>');
+        html = '<p>' + html + '</p>';
+        document.getElementById('previewContent').innerHTML = html;
+    }
+}
+
+// Image upload area
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('imageUploadArea');
+    const fileInput = document.getElementById('image');
+    const imagePreview = document.getElementById('imagePreview');
+
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                showPreview(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) {
+                showPreview(fileInput.files[0]);
+            }
+        });
+
+        function showPreview(file) {
+            if (!file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.classList.remove('hidden');
+                imagePreview.innerHTML = `<img src="${e.target.result}" alt="预览">`;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // Delete image checkbox
+    const deleteCheckbox = document.getElementById('deleteImage');
+    const currentImage = document.getElementById('currentImage');
+    if (deleteCheckbox && currentImage) {
+        deleteCheckbox.addEventListener('change', function() {
+            const img = currentImage.querySelector('img');
+            if (img) {
+                img.style.opacity = this.checked ? '0.3' : '1';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

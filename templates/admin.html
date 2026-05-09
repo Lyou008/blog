@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}管理后台 - L丶YOU的博客{% endblock %}
+{% block content %}
+<div class="admin-page">
+    <div class="page-header admin-header">
+        <h1><i class="fas fa-cog"></i> 管理后台</h1>
+        <div class="admin-header-actions">
+            <a href="{{ url_for('change_password') }}" class="btn btn-outline">
+                <i class="fas fa-key"></i> 修改密码
+            </a>
+            <a href="{{ url_for('create_post') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> 写新文章
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="quick-stats">
+        <div class="quick-stat-card">
+            <div class="quick-stat-icon blue"><i class="fas fa-file-alt"></i></div>
+            <div class="quick-stat-info">
+                <span class="quick-stat-value">{{ stats.total_posts }}</span>
+                <span class="quick-stat-label">文章总数</span>
+            </div>
+        </div>
+        <div class="quick-stat-card">
+            <div class="quick-stat-icon green"><i class="fas fa-eye"></i></div>
+            <div class="quick-stat-info">
+                <span class="quick-stat-value">{{ stats.total_views }}</span>
+                <span class="quick-stat-label">总阅读量</span>
+            </div>
+        </div>
+        <div class="quick-stat-card">
+            <div class="quick-stat-icon purple"><i class="fas fa-tags"></i></div>
+            <div class="quick-stat-info">
+                <span class="quick-stat-value">{{ stats.total_tags }}</span>
+                <span class="quick-stat-label">标签</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Management Table -->
+    {% if posts %}
+    <div class="table-container">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>标题</th>
+                    <th>发布日期</th>
+                    <th>阅读</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for post in posts %}
+                <tr>
+                    <td class="td-title">
+                        <a href="{{ url_for('view_post', post_id=post.id) }}">{{ post.title }}</a>
+                    </td>
+                    <td class="td-date">{{ post.created_at[:10] }}</td>
+                    <td class="td-views">{{ post.views }}</td>
+                    <td class="td-actions">
+                        <a href="{{ url_for('view_post', post_id=post.id) }}" class="action-btn view" title="查看">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{{ url_for('edit_post', post_id=post.id) }}" class="action-btn edit" title="编辑">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <form action="{{ url_for('delete_post', post_id=post.id) }}" method="post" class="inline-form"
+                              onsubmit="return confirm('确定要删除「{{ post.title }}」吗？此操作不可恢复。')">
+                            <button type="submit" class="action-btn delete" title="删除">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-pen-fancy"></i>
+        <h2>还没有文章</h2>
+        <p>开始你的第一篇博客吧！</p>
+        <a href="{{ url_for('create_post') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> 写文章
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

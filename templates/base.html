@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}L丶YOU的博客{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-inner">
+                <a href="{{ url_for('index') }}" class="nav-brand">
+                    <i class="fas fa-feather"></i> L丶YOU的博客
+                </a>
+                <div class="nav-links">
+                    <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> 首页</a>
+                    {% if logged_in %}
+                    <a href="{{ url_for('admin') }}"><i class="fas fa-cog"></i> 管理</a>
+                    <a href="{{ url_for('create_post') }}"><i class="fas fa-pen"></i> 写文章</a>
+                    <a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> 退出</a>
+                    {% else %}
+                    <a href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i> 登录</a>
+                    {% endif %}
+                </div>
+                <div class="nav-actions">
+                    <button id="themeToggle" class="icon-btn" title="切换主题">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button id="searchToggle" class="icon-btn" title="搜索">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button id="menuToggle" class="icon-btn mobile-only" title="菜单">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Search Bar -->
+            <div id="searchBar" class="search-bar hidden">
+                <form action="{{ url_for('index') }}" method="get" class="search-form">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" name="q" placeholder="搜索文章..." value="{{ search or '' }}" autocomplete="off">
+                    <button type="submit" class="btn btn-sm">搜索</button>
+                </form>
+            </div>
+        </nav>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-container">
+            {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">
+                <span>{{ message }}</span>
+                <button onclick="this.parentElement.remove()">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Main Content -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-inner">
+                <p>&copy; 2026 L丶YOU的博客 · 用 ❤️ 和 Flask 构建</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
