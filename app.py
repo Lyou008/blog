@@ -228,6 +228,18 @@ def init_db():
                 )
             ''')
         
+        # 添加缺失的列（兼容旧数据）
+        missing_columns = [
+            ('views', 'INTEGER DEFAULT 0'),
+            ('image', 'TEXT'),
+            ('summary', 'TEXT')
+        ]
+        for col, col_type in missing_columns:
+            try:
+                cur.execute(f'ALTER TABLE posts ADD COLUMN {col} {col_type}')
+            except:
+                pass  # 列已存在
+        
         conn.commit()
         print("✅ 数据库初始化完成")
     except Exception as e:
@@ -281,11 +293,48 @@ def index():
             JOIN post_tags ON tags.id = post_tags.tag_id 
             WHERE post_tags.post_id = ?
         ''', (post['id'],))
+        # 添加缺失的字段（兼容旧数据）
+        if 'views' not in post:
+            post['views'] = 0
+        if 'image' not in post:
+            post['image'] = None
+        if 'summary' not in post:
+            post['summary'] = ''
     
     total_posts = fetch_one('SELECT COUNT(*) as count FROM posts WHERE is_draft = FALSE')
+    
+    # 统计（兼容可能没有的列的的情况）
+    stats = {
+        'total_posts': total_posts['count'],
+        'total_views': 0,
+        'total_tags': 0
+    }
+    
+    try:
+        total_tags = fetch_one('SELECT COUNT(*) as count FROM tags')
+        stats['total_tags'] = total_tags['count']
+    except:
+        pass
+    
     total_pages = (total_posts['count'] + app.config['POSTS_PER_PAGE'] - 1) // app.config['POSTS_PER_PAGE']
     
-    return render_template('index.html', posts=posts, page=page, total_pages=total_pages)
+    # 最近文章
+    recent_posts = fetch_all('''
+        SELECT * FROM posts 
+        WHERE is_draft = FALSE 
+        ORDER BY created_at DESC 
+        LIMIT 5
+    ''')
+    
+    return render_template('index.html', 
+                           posts=posts, 
+                           page=page, 
+                           total_pages=total_pages, 
+                           stats=stats, 
+                           recent_posts=recent_posts,
+                           logged_in=session.get('logged_in', False),
+                           search='',
+                           tag='')
 
 
 @app.route('/post/<int:post_id>')

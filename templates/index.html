@@ -24,7 +24,7 @@
         <div class="post-list">
             {% for post in posts %}
             <article class="post-card">
-                {% if post.image %}
+                {% if post.get('image') %}
                 <div class="post-card-image">
                     <a href="{{ url_for('view_post', post_id=post.id) }}">
                         <img src="{{ url_for('uploaded_file', filename=post.image) }}" alt="{{ post.title }}" loading="lazy">
@@ -37,7 +37,7 @@
                     </h2>
                     <div class="post-card-meta">
                         <span><i class="far fa-calendar-alt"></i> {{ post.created_at[:10] }}</span>
-                        <span><i class="far fa-eye"></i> {{ post.views }} 次阅读</span>
+                        <span><i class="far fa-eye"></i> {{ post.get('views', 0) }} 次阅读</span>
                         {% if post.tags %}
                         <span class="post-card-tags">
                             {% for tag_name in post.tags %}
@@ -46,7 +46,7 @@
                         </span>
                         {% endif %}
                     </div>
-                    {% if post.summary %}
+                    {% if post.get('summary') %}
                     <p class="post-card-summary">{{ post.summary }}</p>
                     {% endif %}
                     <a href="{{ url_for('view_post', post_id=post.id) }}" class="read-more">
