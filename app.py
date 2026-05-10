@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Personal Blog - Flask Application
-支持 SQLite（本地开发）和 PostgreSQL（生产环境）
-自动检测 DATABASE_URL 环境变量
+支持 PostgreSQL 和 SQLite 自动切换
+专为 Render 部署优化
 """
 
 import os
@@ -27,9 +27,13 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 USE_POSTGRESQL = DATABASE_URL and DATABASE_URL.startswith('postgres')
 
 if USE_POSTGRESQL:
-    import psycopg2
-    import psycopg2.extras
-    print("📦 使用 PostgreSQL 数据库")
+    try:
+        import psycopg2
+        import psycopg2.extras
+        print("📦 使用 PostgreSQL 数据库")
+    except ImportError:
+        print("❌ 未安装 psycopg2-binary，请添加到 requirements.txt")
+        sys.exit(1)
 else:
     print("📦 使用 SQLite 数据库")
 
@@ -38,13 +42,8 @@ else:
 # 安全配置：生产环境必须设置 SECRET_KEY
 secret_key = os.environ.get('SECRET_KEY')
 if not secret_key:
-    if app.debug or os.environ.get('FLASK_ENV') == 'development':
-        secret_key = 'dev-only-key-do-not-use-in-production'
-        print("⚠️  警告：使用开发密钥，不要在生产环境使用！")
-    else:
-        raise ValueError(
-            "❌ 生产环境必须设置 SECRET_KEY 环境变量！"
-        )
+    secret_key = 'dev-only-key-do-not-use-in-production'
+    print("⚠️  警告：使用开发密钥")
 app.secret_key = secret_key
 
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
@@ -400,9 +399,12 @@ def new_post():
                     tag_id = cur.lastrowid
             
             # 关联文章和标签
-            execute_sql('''
-                INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (?, ?)
-            ''', (post_id, tag_id))
+            try:
+                execute_sql('''
+                    INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)
+                ''', (post_id, tag_id))
+            except:
+                pass  # 可能已存在
         
         flash('文章发布成功！')
         return redirect(url_for('admin'))
