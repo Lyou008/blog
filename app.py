@@ -129,7 +129,6 @@ def fetch_one(sql, params=None):
 
 # ── 管理员配置 ──────────────────────────────────────────────
 ADMIN_USERNAME = os.environ.get('BLOG_ADMIN_USER', 'admin')
-ADMIN_PASSWORD_HASH = None
 
 
 # ── 初始化数据库 ──────────────────────────────────────────────
@@ -363,19 +362,20 @@ def view_post(post_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     """登录"""
-    global ADMIN_PASSWORD_HASH
+    # 确保数据库中有默认用户
+    user = fetch_one('SELECT * FROM users WHERE username = ?', (ADMIN_USERNAME,))
     
-    # 如果还没有设置密码，使用默认密码
-    if ADMIN_PASSWORD_HASH is None:
-        ADMIN_PASSWORD_HASH = generate_password_hash('admin123')
-        # 创建默认用户
+    if not user:
+        # 数据库中不存在用户，创建默认用户
+        password_hash = generate_password_hash('admin123')
         try:
             execute_sql('''
                 INSERT INTO users (username, password_hash) 
                 VALUES (?, ?)
-            ''', (ADMIN_USERNAME, ADMIN_PASSWORD_HASH))
-        except:
-            pass  # 用户可能已存在
+            ''', (ADMIN_USERNAME, password_hash))
+            print(f"✅ 已创建默认用户：{ADMIN_USERNAME} / admin123")
+        except Exception as e:
+            print(f"❌ 创建用户失败: {e}")
     
     if request.method == 'POST':
         username = request.form.get('username')
