@@ -480,6 +480,12 @@ def api_posts():
 
 
 # ── 主程序 ──────────────────────────────────────────────────
+# 应用启动时自动初始化数据库（Gunicorn 和 python 都执行）
+with app.app_context():
+    try:
+        init_db()
+    except Exception as e:
+        print(f"⚠️  数据库初始化警告：{e}")
+
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True, host='0.0.0.0', port=5000)
