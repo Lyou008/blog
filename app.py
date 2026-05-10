@@ -269,7 +269,7 @@ def index():
     
     posts = fetch_all('''
         SELECT * FROM posts 
-        WHERE is_draft = 0 
+        WHERE is_draft = FALSE 
         ORDER BY created_at DESC 
         LIMIT ? OFFSET ?
     ''', (app.config['POSTS_PER_PAGE'], offset))
@@ -282,7 +282,7 @@ def index():
             WHERE post_tags.post_id = ?
         ''', (post['id'],))
     
-    total_posts = fetch_one('SELECT COUNT(*) as count FROM posts WHERE is_draft = 0')
+    total_posts = fetch_one('SELECT COUNT(*) as count FROM posts WHERE is_draft = FALSE')
     total_pages = (total_posts['count'] + app.config['POSTS_PER_PAGE'] - 1) // app.config['POSTS_PER_PAGE']
     
     return render_template('index.html', posts=posts, page=page, total_pages=total_pages)
@@ -304,7 +304,7 @@ def view_post(post_id):
     
     comments = fetch_all('''
         SELECT * FROM comments 
-        WHERE post_id = ? AND is_approved = 1 
+        WHERE post_id = ? AND is_approved = TRUE 
         ORDER BY created_at ASC
     ''', (post_id,))
     
@@ -367,8 +367,8 @@ def new_post():
     if request.method == 'POST':
         title = request.form.get('title')
         content = request.form.get('content')
-        is_draft = 1 if request.form.get('is_draft') else 0
-        allow_comments = 1 if request.form.get('allow_comments', '1') else 0
+        is_draft = True if request.form.get('is_draft') else False
+        allow_comments = True if request.form.get('allow_comments', '1') else False
         
         tags = request.form.get('tags', '').split(',')
         tags = [t.strip() for t in tags if t.strip()]
@@ -419,8 +419,8 @@ def edit_post(post_id):
     if request.method == 'POST':
         title = request.form.get('title')
         content = request.form.get('content')
-        is_draft = 1 if request.form.get('is_draft') else 0
-        allow_comments = 1 if request.form.get('allow_comments', '1') else 0
+        is_draft = True if request.form.get('is_draft') else False
+        allow_comments = True if request.form.get('allow_comments', '1') else False
         
         # 更新文章
         execute_sql('''
@@ -473,7 +473,7 @@ def api_posts():
     """API：获取文章列表"""
     posts = fetch_all('''
         SELECT id, title, created_at FROM posts 
-        WHERE is_draft = 0 
+        WHERE is_draft = FALSE 
         ORDER BY created_at DESC
     ''')
     return jsonify(posts)
