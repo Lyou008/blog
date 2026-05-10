@@ -2,4 +2,4 @@ flask
 markdown
 python-dateutil
 gunicorn
-asgiref
+psycopg2-binary

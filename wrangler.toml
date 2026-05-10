@@ -1,23 +1,12 @@
 name = "lyou-blog"
-main = "api/index.py"
+main = "worker.py"
 compatibility_date = "2025-04-01"
 compatibility_flags = ["python_workers"]
 
-# ── D1 数据库绑定 ────────────────────────────────────────────
-# 部署前需要先创建 D1 数据库：
-#   npx wrangler d1 create lyou-blog-db
-# 然后将输出中的 database_id 填入下方
 [[d1_databases]]
-binding = "DB"              # 必须叫 "DB"，与 api/index.py 中一致
+binding = "DB"
 database_name = "lyou-blog-db"
-database_id = "your-d1-database-id-here"
+database_id = "cecb23d5-c197-4b73-905d-f6c7407ce0d9"
 
-# ── 环境变量 ──────────────────────────────────────────────────
 [vars]
 BLOG_ADMIN_USER = "admin"
-# BLOG_ADMIN_PASS 是敏感信息，建议用 Cloudflare Dashboard Secrets 设置
-# 在 Dashboard → Workers & Pages → lyou-blog → Settings → Variables → 添加 Secret
-
-# ── 兼容性 ────────────────────────────────────────────────────
-# Workers Python 运行时需要 asgiref 库
-# 通过 requirements.txt 安装
